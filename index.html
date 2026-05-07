@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculateur LAN — Navigation Céleste</title>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1320;
+      --surface: #121c30;
+      --surface2: #1a2640;
+      --border: rgba(100,160,255,0.15);
+      --border2: rgba(100,160,255,0.3);
+      --gold: #c9a84c;
+      --gold-light: #e8cb82;
+      --gold-dim: rgba(201,168,76,0.15);
+      --blue: #4a9eff;
+      --text: #d8e4f0;
+      --text-muted: #6b88a8;
+      --text-dim: #3d5570;
+      --green: #4ecdc4;
+      --red: #ff6b6b;
+      --mono: 'JetBrains Mono', monospace;
+      --serif: 'Crimson Pro', Georgia, serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--serif);
+      font-size: 17px;
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(74,158,255,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(201,168,76,0.05) 0%, transparent 50%);
+    }
+    header { text-align: center; padding: 3rem 2rem 2rem; border-bottom: 1px solid var(--border); }
+    .sun-icon { font-size: 2.2rem; margin-bottom: 0.6rem; display: block; animation: spin 60s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-family: var(--serif); font-weight: 300; font-size: clamp(1.5rem,4vw,2.2rem); letter-spacing: 0.08em; color: var(--gold-light); margin-bottom: 0.3rem; }
+    .tagline { font-size: 0.9rem; color: var(--text-muted); font-style: italic; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .section { margin-bottom: 1.75rem; }
+    .section-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+    .section-num { font-family: var(--mono); font-size: 0.68rem; color: var(--gold); background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.3); border-radius: 3px; padding: 2px 7px; }
+    .section-title { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); font-family: var(--mono); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; }
+    .grid-3-1 { display: grid; grid-template-columns: 3fr 1fr; gap: 1rem; align-items: end; }
+    .coord-row { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 0.75rem; }
+    @media(max-width:600px) { .grid-3,.grid-2,.coord-row,.grid-3-1 { grid-template-columns: 1fr; } }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+    .field input, .field select {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 9px 12px; font-family: var(--mono); font-size: 0.88rem;
+      width: 100%; transition: border-color 0.2s, background 0.2s;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--blue); background: var(--surface2); }
+    .field input:disabled { opacity: 0.35; cursor: not-allowed; }
+    .field select option { background: var(--surface2); }
+    .subsection-label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; margin-top: 0.75rem; }
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; padding-bottom: 9px; }
+    .toggle-wrap label { font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+    .toggle-wrap input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+    .btn { width: 100%; padding: 13px; border-radius: 8px; font-family: var(--mono); font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; border: 1px solid; }
+    .btn:active { transform: scale(0.99); }
+    .btn-blue { background: linear-gradient(135deg,#1a3a6e,#0f2550); border-color: var(--blue); color: var(--blue); }
+    .btn-blue:hover { background: linear-gradient(135deg,#1e4580,#123070); color: #8dc4ff; box-shadow: 0 0 18px rgba(74,158,255,0.2); }
+    .btn-gold { background: linear-gradient(135deg,#2a1e00,#1f1500); border-color: var(--gold); color: var(--gold); }
+    .btn-gold:hover { background: linear-gradient(135deg,#3a2800,#2a1e00); color: var(--gold-light); box-shadow: 0 0 18px rgba(201,168,76,0.2); }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem; }
+    @media(max-width:500px) { .btn-row { grid-template-columns: 1fr; } }
+    .err { color: var(--red); font-family: var(--mono); font-size: 0.8rem; margin-top: 0.6rem; min-height: 1.1em; }
+    .result-block { display: none; margin-top: 2rem; }
+    .result-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .result-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    @media(max-width:560px) { .result-grid-3,.result-grid-2 { grid-template-columns: 1fr; } }
+    .rc { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.1rem 0.9rem; }
+    .rc.blue { background: linear-gradient(135deg,#0f2040,#1a3560); border-color: rgba(74,158,255,0.4); }
+    .rc.gold { background: linear-gradient(135deg,#1f1500,#2a1e00); border-color: rgba(201,168,76,0.35); }
+    .rc-label { font-family: var(--mono); font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .rc-value { font-family: var(--mono); font-size: 1.4rem; font-weight: 500; color: var(--text); line-height: 1; margin-bottom: 0.25rem; }
+    .rc.blue .rc-value { color: #8dc4ff; }
+    .rc.gold .rc-value { color: var(--gold-light); }
+    .rc-note { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+    .formula-box { background: rgba(201,168,76,0.07); border: 1px solid rgba(201,168,76,0.2); border-radius: 8px; padding: 0.7rem 1rem; margin-bottom: 1rem; font-family: var(--mono); font-size: 0.77rem; color: var(--gold); word-break: break-all; }
+    .steps-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .steps-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.79rem; }
+    .steps-table tr { border-bottom: 1px solid var(--border); }
+    .steps-table tr:last-child { border-bottom: none; }
+    .steps-table tr.sep td { background: rgba(201,168,76,0.06); color: var(--gold); font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 12px; }
+    .steps-table td { padding: 7px 12px; vertical-align: middle; }
+    .steps-table td:first-child { color: var(--text-muted); }
+    .steps-table td:last-child { text-align: right; color: var(--green); font-weight: 500; }
+    footer { text-align: center; padding: 2rem; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-dim); font-style: italic; line-height: 1.7; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="sun-icon">☀</span>
+  <h1>Local Apparent Noon</h1>
+  <p class="tagline">Calculateur de navigation astronomique — passage méridien du Soleil</p>
+</header>
+
+<main>
+
+  <!-- 01 FIX -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Fix de départ</span>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:1rem;">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="date" value="1981-11-15" />
+      </div>
+      <div class="field">
+        <label>Heure Tcf du fix (HH:MM)</label>
+        <input type="text" id="fix_time" value="09:13" placeholder="09:13" />
+      </div>
+      <div>
+        <div class="field" style="margin-bottom:5px;">
+          <label>Fuseau f (TU = Tcf + f)</label>
+          <input type="number" id="zone" value="5" step="1" min="-14" max="14" />
+        </div>
+        <div class="toggle-wrap">
+          <input type="checkbox" id="auto_zone" onchange="toggleAutoZone()" />
+          <label for="auto_zone">Automatique (lon/15)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="subsection-label">Latitude estimée φe</div>
+    <div class="coord-row" style="margin-bottom:0.75rem;">
+      <div class="field"><label>Degrés</label><input type="number" id="lat_d" value="22" min="0" max="89" /></div>
+      <div class="field"><label>Minutes</label><input type="number" id="lat_m" value="30.0" step="0.1" min="0" max="59.9" /></div>
+      <div class="field"><label>N / S</label>
+        <select id="lat_hem"><option value="N">N</option><option value="S">S</option></select>
+      </div>
+    </div>
+
+    <div class="subsection-label">Longitude estimée Ge</div>
+    <div class="coord-row">
+      <div class="field"><label>Degrés</label><input type="number" id="lon_d" value="68" min="0" max="179" /></div>
+      <div class="field"><label>Minutes</label><input type="number" id="lon_m" value="28.0" step="0.1" min="0" max="59.9" /></div>
+      <div class="field"><label>E / W</label>
+        <select id="lon_ew"><option value="W">W</option><option value="E">E</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 ROUTE -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Route &amp; Vitesse</span>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Route fond Rf (°V)</label><input type="number" id="course" value="164" min="0" max="360" /></div>
+      <div class="field"><label>Vitesse fond Vf (nœuds)</label><input type="number" id="speed" value="13.5" step="0.1" min="0" /></div>
+    </div>
+  </div>
+
+  <!-- 03 EPHEMERIDES -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Éphémérides au moment du fix — laisser vide pour calcul auto</span>
+    </div>
+    <p style="font-size:0.83rem; color:var(--text-muted); font-style:italic; margin-bottom:1rem;">
+      Valeurs extraites de l'Almanach Nautique. Si vides, calculées algorithmiquement (précision ±2').
+    </p>
+    <div class="grid-3">
+      <div class="field">
+        <label>AH<sub>vo</sub> — GHA Soleil (°)</label>
+        <input type="number" id="gha" step="0.001" placeholder="Ex : 317.450" />
+      </div>
+      <div class="field">
+        <label>Déclinaison D (° décimal, S=négatif)</label>
+        <input type="number" id="dec_input" step="0.001" placeholder="Ex : -18.45" />
+      </div>
+      <div class="field">
+        <label>Équation du temps (minutes)</label>
+        <input type="number" id="eqt_input" step="0.01" placeholder="Ex : 15.3" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 04 HO -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Hauteur vraie au LAN — Hv = Ho (déjà corrigée)</span>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Ho — Degrés</label><input type="number" id="ho_d" value="49" min="0" max="89" /></div>
+      <div class="field"><label>Ho — Minutes</label><input type="number" id="ho_m" value="46" step="0.1" min="0" max="59.9" /></div>
+    </div>
+  </div>
+
+  <!-- BOUTONS -->
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="calcLAN()">▶ 1 — Heure du LAN</button>
+    <button class="btn btn-gold" onclick="calcLat()">▶ 2 — Latitude au LAN</button>
+  </div>
+  <div id="err" class="err"></div>
+
+  <!-- RÉSULTAT 1 : HEURE -->
+  <div id="result-lan" class="result-block">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <span class="section-title">Heure du passage méridien</span>
+      </div>
+      <div class="formula-box" id="formula-lan"></div>
+      <div class="result-grid-3">
+        <div class="rc blue">
+          <div class="rc-label">Tcf méridienne</div>
+          <div class="rc-value" id="r_lan_zt">—</div>
+          <div class="rc-note" id="r_lan_note"></div>
+        </div>
+        <div class="rc">
+          <div class="rc-label">γ (°/heure)</div>
+          <div class="rc-value" id="r_gamma" style="font-size:1.1rem;">—</div>
+          <div class="rc-note">15 + Vf·sin(Rf)/(60·cos φe)</div>
+        </div>
+        <div class="rc">
+          <div class="rc-label">Angle au pôle P</div>
+          <div class="rc-value" id="r_P" style="font-size:1.1rem;">—</div>
+          <div class="rc-note" id="r_P_note"></div>
+        </div>
+      </div>
+      <div class="steps-wrap"><table class="steps-table"><tbody id="steps-lan"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- RÉSULTAT 2 : LATITUDE -->
+  <div id="result-lat" class="result-block">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <span class="section-title">Latitude méridienne</span>
+      </div>
+      <div class="formula-box" id="formula-lat"></div>
+      <div class="result-grid-2">
+        <div class="rc gold">
+          <div class="rc-label">Latitude φmér = Nv + D</div>
+          <div class="rc-value" id="r_lat">—</div>
+          <div class="rc-note" id="r_lat_note"></div>
+        </div>
+        <div class="rc">
+          <div class="rc-label">Distance zénithale Nv</div>
+          <div class="rc-value" id="r_zd" style="font-size:1.1rem;">—</div>
+          <div class="rc-note" id="r_zd_note"></div>
+        </div>
+        <div class="rc">
+          <div class="rc-label">Déclinaison D au LAN</div>
+          <div class="rc-value" id="r_dec" style="font-size:1.1rem;">—</div>
+          <div class="rc-note" id="r_dec_note"></div>
+        </div>
+        <div class="rc">
+          <div class="rc-label">Hv (= Ho observée corrigée)</div>
+          <div class="rc-value" id="r_hv" style="font-size:1.1rem;">—</div>
+          <div class="rc-note">Hauteur vraie au méridien</div>
+        </div>
+      </div>
+      <div class="steps-wrap"><table class="steps-table"><tbody id="steps-lat"></tbody></table></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Formules de navigation astronomique (notation française).<br>
+  γ = 15 + Vf·sin(Rf)/(60·cos φe) · Tcf_mér = Tcf_fix + P/γ · φmér = Nv + D · Nv = ±(90°−Hv)<br>
+  Éphémérides calculées algorithmiquement si non saisies (précision ±2') — pour usage professionnel, se référer à l'Almanach Nautique.
+</footer>
+
+<script>
+const D2R = Math.PI / 180;
+const R2D = 180 / Math.PI;
+
+// ── Utilitaires ──────────────────────────────────────────────────────────────
+
+function dms(d, m) { return parseFloat(d) + parseFloat(m) / 60; }
+
+function fmtAngle(deg) {
+  const abs = Math.abs(deg);
+  const d = Math.floor(abs);
+  const m = ((abs - d) * 60).toFixed(1);
+  return (deg < 0 ? '-' : '') + d + '° ' + m + "'";
+}
+
+function fmtTime(h) {
+  h = ((h % 24) + 24) % 24;
+  const hh = Math.floor(h);
+  const rest = (h - hh) * 60;
+  const mm = Math.floor(rest);
+  const ss = Math.round((rest - mm) * 60);
+  const sss = ss >= 60 ? 0 : ss;
+  const mmm = ss >= 60 ? mm + 1 : mm;
+  return String(hh).padStart(2,'0') + 'h ' + String(mmm).padStart(2,'0') + 'm ' + String(sss).padStart(2,'0') + 's';
+}
+
+function dayOfYear(y, mo, d) {
+  return Math.floor((Date.UTC(y, mo-1, d) - Date.UTC(y, 0, 0)) / 86400000);
+}
+
+// Équation du temps Spencer (minutes), N = numéro du jour
+function eqtSpencer(y, mo, d) {
+  const N = dayOfYear(y, mo, d);
+  const B = (2 * Math.PI / 365) * (N - 81);
+  return 9.87 * Math.sin(2*B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+}
+
+// Déclinaison solaire USNO (degrés), utH = heure UTC décimale
+function decSoleil(y, mo, d, utH) {
+  const N = dayOfYear(y, mo, d) + utH / 24;
+  const L = (280.460 + 0.9856474 * N) % 360;
+  const g = ((357.528 + 0.9856003 * N) % 360) * D2R;
+  const lam = (L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2*g)) * D2R;
+  const eps = 23.439 * D2R;
+  return Math.asin(Math.sin(eps) * Math.sin(lam)) * R2D;
+}
+
+// GHA Soleil approché (degrés), utH = heure UTC décimale
+function ghaSoleil(y, mo, d, utH) {
+  const eqT_h = eqtSpencer(y, mo, d) / 60;
+  let gha = 15 * (utH - 12) + 180 + eqT_h * 15;
+  return ((gha % 360) + 360) % 360;
+}
+
+function addRow(tbodyId, label, val, isSep) {
+  const tb = document.getElementById(tbodyId);
+  const tr = document.createElement('tr');
+  if (isSep) {
+    tr.className = 'sep';
+    tr.innerHTML = '<td colspan="2">' + label + '</td>';
+  } else {
+    tr.innerHTML = '<td>' + label + '</td><td>' + val + '</td>';
+  }
+  tb.appendChild(tr);
+}
+function clearRows(id) { document.getElementById(id).innerHTML = ''; }
+
+function setErr(msg) { document.getElementById('err').textContent = msg ? '⚠ ' + msg : ''; }
+
+// ── Lecture des inputs ───────────────────────────────────────────────────────
+
+function readInputs() {
+  const dateVal = document.getElementById('date').value;
+  if (!dateVal) throw new Error("Date manquante.");
+  const [y, mo, d] = dateVal.split('-').map(Number);
+
+  const ftStr = document.getElementById('fix_time').value.trim();
+  const fp = ftStr.split(':');
+  if (fp.length < 2 || isNaN(fp[0]) || isNaN(fp[1])) throw new Error("Heure du fix invalide (HH:MM).");
+  const Tcf_fix = parseInt(fp[0]) + parseInt(fp[1]) / 60;
+
+  // Fuseau f : TU = Tcf + f  (f > 0 pour W, ex : f=5 → UTC-5)
+  const f = parseFloat(document.getElementById('zone').value);
+  if (isNaN(f)) throw new Error("Fuseau invalide.");
+  const TU_fix = Tcf_fix + f;
+
+  // Latitude φe
+  let phi_e = dms(document.getElementById('lat_d').value, document.getElementById('lat_m').value);
+  if (document.getElementById('lat_hem').value === 'S') phi_e = -phi_e;
+
+  // Longitude Ge (+E, -W)
+  let Ge = dms(document.getElementById('lon_d').value, document.getElementById('lon_m').value);
+  if (document.getElementById('lon_ew').value === 'W') Ge = -Ge;
+
+  const Rf = parseFloat(document.getElementById('course').value);
+  const Vf = parseFloat(document.getElementById('speed').value);
+  if (isNaN(phi_e) || isNaN(Ge) || isNaN(Rf) || isNaN(Vf)) throw new Error("Données de position/route invalides.");
+
+  // Éphémérides (saisies ou calculées)
+  const gha_raw = document.getElementById('gha').value;
+  const dec_raw = document.getElementById('dec_input').value;
+  const eqt_raw = document.getElementById('eqt_input').value;
+  const GHA = (gha_raw !== '') ? parseFloat(gha_raw) : ghaSoleil(y, mo, d, TU_fix);
+  const D   = (dec_raw !== '') ? parseFloat(dec_raw) : decSoleil(y, mo, d, TU_fix);
+  const EqT = (eqt_raw !== '') ? parseFloat(eqt_raw) : eqtSpencer(y, mo, d);
+
+  const srcEph = (gha_raw === '' || dec_raw === '' || eqt_raw === '') ? "calculées algo" : "saisies";
+
+  return { y, mo, d, Tcf_fix, f, TU_fix, phi_e, Ge, Rf, Vf, GHA, D, EqT, srcEph };
+}
+
+// ── Fuseau automatique ───────────────────────────────────────────────────────
+
+function toggleAutoZone() {
+  const cb  = document.getElementById('auto_zone');
+  const inp = document.getElementById('zone');
+  if (cb.checked) {
+    const lonD   = parseFloat(document.getElementById('lon_d').value) || 0;
+    const lonM   = parseFloat(document.getElementById('lon_m').value) || 0;
+    const lonHem = document.getElementById('lon_ew').value;
+    let lon = lonD + lonM / 60;
+    if (lonHem === 'W') lon = -lon;
+    // f = –round(lon/15)  avec signe : f>0 si W
+    inp.value = Math.round(-lon / 15);
+    inp.disabled = true;
+  } else {
+    inp.disabled = false;
+  }
+}
+['lon_d','lon_m','lon_ew'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => {
+    if (document.getElementById('auto_zone').checked) toggleAutoZone();
+  })
+);
+
+// ── CALCUL 1 : HEURE DU LAN ──────────────────────────────────────────────────
+// Tcf_mér = Tcf_fix + P / γ
+// AHag = GHA − Ge  (mod 360, convention +E pour Ge)
+// si AHag ≤ 180 → Soleil à l'Ouest → P = AHag
+// si AHag > 180 → Soleil à l'Est  → P = 360 − AHag
+// γ = 15 + Vf·sin(Rf) / (60·cos(φe))   [°/h]
+// ─────────────────────────────────────────────────────────────────────────────
+
+function calcLAN() {
+  setErr('');
+  try {
+    const inp = readInputs();
+    const { Tcf_fix, phi_e, Ge, Rf, Vf, GHA, EqT, srcEph } = inp;
+
+    // AHag = AH_vo − Ge (mod 360)  — Ge est signé +E/-W
+    // Dans la formule : AHag = GHA − Ge
+    let AHag = ((GHA - Ge) % 360 + 360) % 360;
+
+    let P, side;
+    if (AHag <= 180) {
+      P    = AHag;
+      side = "Ouest";
+    } else {
+      P    = 360 - AHag;
+      side = "Est";
+    }
+
+    // γ = 15 + Vf·sin(Rf) / (60·cos(φe))
+    const corr_v = (Vf * Math.sin(Rf * D2R)) / (60 * Math.cos(phi_e * D2R));
+    const gamma  = 15 + corr_v;
+
+    // Tcf méridienne
+    const Tcf_mer = Tcf_fix + P / gamma;
+
+    // Affichage
+    document.getElementById('formula-lan').textContent =
+      'Tcf_mér = Tcf_fix + P/γ  →  '
+      + fmtTime(Tcf_fix).replace('s','s ZT_fix') + ' + '
+      + P.toFixed(3) + '° / ' + gamma.toFixed(4) + '°/h  =  '
+      + fmtTime(Tcf_mer) + ' ZT';
+
+    document.getElementById('r_lan_zt').textContent  = fmtTime(Tcf_mer) + ' ZT';
+    document.getElementById('r_lan_note').textContent = 'Éq. du temps : '+(EqT>=0?'+':'')+EqT.toFixed(2)+' min ('+srcEph+')';
+    document.getElementById('r_gamma').textContent   = gamma.toFixed(4) + ' °/h';
+    document.getElementById('r_P').textContent       = P.toFixed(2) + '°';
+    document.getElementById('r_P_note').textContent  = 'Soleil à l\'' + side + '  (AHag=' + AHag.toFixed(2) + '°)';
+
+    // Étapes
+    clearRows('steps-lan');
+    addRow('steps-lan','— Éphémérides au fix —','',true);
+    addRow('steps-lan','GHA Soleil (AH_vo) ['+srcEph+']', GHA.toFixed(3)+'°');
+    addRow('steps-lan','Ge longitude estimée', fmtAngle(Ge)+(Ge<0?' W':' E'));
+    addRow('steps-lan','— Angle horaire AHag —','',true);
+    addRow('steps-lan','AHag = GHA − Ge  (mod 360°)', AHag.toFixed(3)+'°');
+    addRow('steps-lan','AHag ≤ 180° ?', AHag<=180 ? 'Oui → P = AHag' : 'Non → P = 360° − AHag');
+    addRow('steps-lan','P  angle au pôle', P.toFixed(3)+'° (Soleil à l\''+side+')');
+    addRow('steps-lan','— Calcul de γ —','',true);
+    addRow('steps-lan','Rf route fond', Rf.toFixed(1)+'°');
+    addRow('steps-lan','Vf vitesse fond', Vf.toFixed(2)+' kn');
+    addRow('steps-lan','φe latitude estimée', fmtAngle(phi_e)+(phi_e>=0?' N':' S'));
+    addRow('steps-lan','Vf·sin(Rf)', (Vf*Math.sin(Rf*D2R)).toFixed(4));
+    addRow('steps-lan','60·cos(φe)', (60*Math.cos(phi_e*D2R)).toFixed(4));
+    addRow('steps-lan','Correction vitesse navire', (corr_v>=0?'+':'')+corr_v.toFixed(4)+' °/h');
+    addRow('steps-lan','γ = 15 + correction', gamma.toFixed(4)+' °/h');
+    addRow('steps-lan','— Résultat heure —','',true);
+    addRow('steps-lan','Tcf fix', fmtTime(Tcf_fix)+' ZT');
+    addRow('steps-lan','P/γ', (P/gamma).toFixed(4)+' h');
+    addRow('steps-lan','Tcf méridienne', fmtTime(Tcf_mer)+' ZT');
+
+    document.getElementById('result-lan').style.display = 'block';
+    document.getElementById('result-lan').scrollIntoView({behavior:'smooth',block:'start'});
+
+  } catch(e) { setErr(e.message); }
+}
+
+// ── CALCUL 2 : LATITUDE ──────────────────────────────────────────────────────
+// φmér = Nv + D
+// Nv = ±(90° − Hv)  — le signe est celui de (φe − D)
+// Hv = Ho  (Ho est la hauteur vraie déjà corrigée)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function calcLat() {
+  setErr('');
+  try {
+    const inp = readInputs();
+    const { y, mo, d, f, phi_e, EqT, srcEph } = inp;
+
+    const ho_d = parseFloat(document.getElementById('ho_d').value);
+    const ho_m = parseFloat(document.getElementById('ho_m').value);
+    if (isNaN(ho_d) || isNaN(ho_m)) throw new Error("Ho manquant.");
+    const Hv = dms(ho_d, ho_m);
+
+    // Déclinaison au moment du LAN
+    // Si saisie → on l'utilise. Sinon on recalcule à TU_LAN estimé.
+    let D, srcD;
+    const dec_raw = document.getElementById('dec_input').value;
+    if (dec_raw !== '') {
+      D    = parseFloat(dec_raw);
+      srcD = "saisie";
+    } else {
+      // TU du LAN estimé : à la longitude Ge, transit LMT ≈ 12h − EqT/60
+      // TU_LAN = LMT_transit − Ge/15 = (12 − EqT/60) − Ge/15
+      const TU_LAN = (12 - EqT / 60) - inp.Ge / 15;
+      D    = decSoleil(y, mo, d, TU_LAN);
+      srcD = "calculée algo (TU_LAN≈" + fmtTime(TU_LAN) + ")";
+    }
+
+    // Signe de Nv : signe de (φe − D)
+    const diff = phi_e - D;
+    const sign = diff >= 0 ? 1 : -1;
+    const Nv   = sign * (90 - Hv);
+
+    // Latitude
+    const phi_mer = Nv + D;
+
+    const phiHem = phi_mer >= 0 ? 'N' : 'S';
+    const phiAbs = Math.abs(phi_mer);
+    const phiDeg = Math.floor(phiAbs);
+    const phiMin = ((phiAbs - phiDeg)*60).toFixed(1);
+
+    const decHem = D >= 0 ? 'N' : 'S';
+    const decAbs = Math.abs(D);
+
+    // Affichage
+    document.getElementById('formula-lat').textContent =
+      'φmér = Nv + D  →  Nv = '+(sign>=0?'+':'−')+'(90° − '
+      +Math.floor(Hv)+'° '+((Hv%1)*60).toFixed(1)+"')  =  "
+      +Nv.toFixed(3)+'°    D = '+D.toFixed(3)+'°    →  φmér = '+phi_mer.toFixed(3)+'°';
+
+    document.getElementById('r_lat').textContent     = phiDeg+"° "+phiMin+"' "+phiHem;
+    document.getElementById('r_lat_note').textContent = 'Nv = '+Nv.toFixed(3)+'°  +  D = '+D.toFixed(3)+'°';
+    document.getElementById('r_zd').textContent      = fmtAngle(Nv);
+    document.getElementById('r_zd_note').textContent = '±(90°−Hv), signe(φe−D)='+(sign>=0?'+':'−');
+    document.getElementById('r_dec').textContent     = Math.floor(decAbs)+"° "+((decAbs%1)*60).toFixed(1)+"' "+decHem;
+    document.getElementById('r_dec_note').textContent = srcD;
+    document.getElementById('r_hv').textContent      = Math.floor(Hv)+"° "+((Hv%1)*60).toFixed(1)+"'";
+
+    // Étapes
+    clearRows('steps-lat');
+    addRow('steps-lat','— Données —','',true);
+    addRow('steps-lat','Ho = Hv (hauteur vraie)', Math.floor(Hv)+"° "+((Hv%1)*60).toFixed(1)+"'");
+    addRow('steps-lat','Déclinaison D ['+srcD+']', Math.floor(decAbs)+"° "+((decAbs%1)*60).toFixed(1)+"' "+decHem);
+    addRow('steps-lat','φe latitude estimée', fmtAngle(phi_e)+(phi_e>=0?' N':' S'));
+    addRow('steps-lat','— Distance zénithale Nv —','',true);
+    addRow('steps-lat','φe − D', diff.toFixed(4)+'° → signe '+(sign>=0 ? 'positif (+)' : 'négatif (−)'));
+    addRow('steps-lat','90° − Hv', (90-Hv).toFixed(4)+'°');
+    addRow('steps-lat','Nv = '+(sign>=0?'+':'−')+'(90°−Hv)', fmtAngle(Nv));
+    addRow('steps-lat','— Latitude méridienne —','',true);
+    addRow('steps-lat','φmér = Nv + D', phiDeg+"° "+phiMin+"' "+phiHem);
+
+    document.getElementById('result-lat').style.display = 'block';
+    document.getElementById('result-lat').scrollIntoView({behavior:'smooth',block:'start'});
+
+  } catch(e) { setErr(e.message); }
+}
+</script>
+</body>
+</html>
