@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -330,11 +331,61 @@ function decSoleil(y, mo, d, utH) {
 }
 
 // GHA Soleil approché (degrés), utH = heure UTC décimale
+
 function ghaSoleil(y, mo, d, utH) {
-  const eqT_h = eqtSpencer(y, mo, d) / 60;
-  let gha = 15 * (utH - 12) + 180 + eqT_h * 15;
-  return ((gha % 360) + 360) % 360;
+
+  // Jour julien simplifié
+  const date = new Date(Date.UTC(y, mo - 1, d, utH, 0, 0));
+  const JD = date.getTime() / 86400000 + 2440587.5;
+
+  const T = (JD - 2451545.0) / 36525;
+
+  // Longitude moyenne du Soleil
+  let L0 = 280.46646 + 36000.76983 * T;
+  L0 = ((L0 % 360) + 360) % 360;
+
+  // Anomalie moyenne
+  let M = 357.52911 + 35999.05029 * T;
+  M = ((M % 360) + 360) % 360;
+
+  const Mrad = M * Math.PI / 180;
+
+  // Longitude vraie
+  const C =
+      (1.914602 - 0.004817 * T) * Math.sin(Mrad)
+    + 0.019993 * Math.sin(2 * Mrad)
+    + 0.000289 * Math.sin(3 * Mrad);
+
+  const trueLong = L0 + C;
+
+  // Ascension droite
+  const eps = 23.439291 - 0.0130042 * T;
+
+  const lambda = trueLong * Math.PI / 180;
+  const epsRad = eps * Math.PI / 180;
+
+  let RA = Math.atan2(
+      Math.cos(epsRad) * Math.sin(lambda),
+      Math.cos(lambda)
+  ) * 180 / Math.PI;
+
+  RA = ((RA % 360) + 360) % 360;
+
+  // Temps sidéral de Greenwich
+  let GMST =
+      280.46061837
+    + 360.98564736629 * (JD - 2451545)
+    + 0.000387933 * T * T;
+
+  GMST = ((GMST % 360) + 360) % 360;
+
+  // GHA Soleil
+  let GHA = GMST - RA;
+  GHA = ((GHA % 360) + 360) % 360;
+
+  return GHA;
 }
+
 
 function addRow(tbodyId, label, val, isSep) {
   const tb = document.getElementById(tbodyId);
@@ -433,16 +484,24 @@ function calcLAN() {
 
     // AHag = AH_vo − Ge (mod 360)  — Ge est signé +E/-W
     // Dans la formule : AHag = GHA − Ge
-    let AHag = ((GHA - Ge) % 360 + 360) % 360;
+    let AHag = ((GHA + Ge) % 360 + 360) % 360;
 
     let P, side;
+
+
     if (AHag <= 180) {
-      P    = AHag;
-      side = "Ouest";
-    } else {
-      P    = 360 - AHag;
+      // Soleil à l'Est → LAN à venir
+      P = AHag;
       side = "Est";
+    } else {
+      // Soleil à l'Ouest → LAN déjà passé
+      P = 360 - AHag;
+      side = "Ouest";
     }
+
+
+
+
 
     // γ = 15 + Vf·sin(Rf) / (60·cos(φe))
     const corr_v = (Vf * Math.sin(Rf * D2R)) / (60 * Math.cos(phi_e * D2R));
